@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OKC Tree Suitability</title>
+  <link rel="icon" type="image/x-icon" href="/ou.ico">
 
   <!-- Calcite Design System (Optional, using CSS mainly) -->
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
@@ -16,13 +17,34 @@
 
 <body>
 
-  <!-- Sidebar -->
-  <div id="sidebar">
-    <div class="sidebar-header">
-      <h1>OKC Tree Planter</h1>
-      <p>Site Assessment Tool</p>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="header-left">
+        <div class="logo-section">
+          <a href="https://www.ou.edu/ags/csa" target="_blank" class="csa-logo">
+            <span class="csa-text">CSA</span>
+          </a>
+          <div class="header-text">
+            <h1 class="header-title">OKC Tree Planter</h1>
+            <p class="header-subtitle">Site Assessment Tool | Center for Spatial Analysis, University of Oklahoma</p>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <nav class="header-nav">
+          <a href="https://www.ou.edu/ags/csa" target="_blank" class="nav-link">About CSA</a>
+          <a href="https://csagis-uok.opendata.arcgis.com/" target="_blank" class="nav-link">Data Warehouse</a>
+          <a href="https://www.ou.edu/ags/csa/csa-projects/events" target="_blank" class="nav-link">Events</a>
+        </nav>
+      </div>
     </div>
+  </header>
 
+  <!-- Main Content Area -->
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div id="sidebar">
     <div class="sidebar-content">
       <div class="control-group">
         <label for="treeSelect">Select Tree Type</label>
@@ -57,18 +79,31 @@
         </div>
       </div>
     </div>
-
-    <div class="sidebar-footer">
-      <p>Data: OKC Open Data, Microsoft Buildings</p>
-    </div>
   </div>
 
-  <!-- Map View -->
-  <div id="viewDiv"></div>
+    <!-- Map View -->
+    <div id="viewDiv"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-bottom">
+      <p>&copy; <span id="currentYear"></span> Center for Spatial Analysis, University of Oklahoma. All rights reserved.</p>
+      <p class="footer-contact">
+        Contact: <a href="mailto:csa@ou.edu">csa@ou.edu</a> | 
+        <a href="https://www.ou.edu/ags/csa" target="_blank">www.ou.edu/ags/csa</a>
+      </p>
+      <p class="footer-note">Specializing in applied geospatial research and Enterprise GIS solutions for over 30 years.</p>
+    </div>
+  </footer>
 
   <!-- ArcGIS API -->
   <script src="https://js.arcgis.com/4.31/"></script>
   <script src="app.js"></script>
+  <script>
+    // Set current year in footer
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+  </script>
 </body>
 
 </html>

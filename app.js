@@ -8,9 +8,11 @@ require([
     "esri/widgets/Search",
     "esri/widgets/Home",
     "esri/widgets/ScaleBar",
+    "esri/widgets/BasemapGallery",
+    "esri/widgets/Expand",
     "esri/symbols/SimpleFillSymbol",
     "esri/symbols/SimpleLineSymbol"
-], (Map, MapView, FeatureLayer, GraphicsLayer, geometryEngine, Graphic, Search, Home, ScaleBar, SimpleFillSymbol, SimpleLineSymbol) => {
+], (Map, MapView, FeatureLayer, GraphicsLayer, geometryEngine, Graphic, Search, Home, ScaleBar, BasemapGallery, Expand, SimpleFillSymbol, SimpleLineSymbol) => {
 
     // --- Configuration ---
     const treeTypes = [
@@ -26,6 +28,8 @@ require([
     });
 
     // 1. Zoning Layer (OKC Public Data)
+    // Note: This service has CORS restrictions and may not work from localhost
+    // The layer will gracefully fail if CORS blocks access
     const zoningLayer = new FeatureLayer({
         url: "https://data.okc.gov/arcgis/rest/services/Public/Data_OKC_Gov_Application_Service/MapServer/6",
         title: "OKC Zoning",
@@ -42,21 +46,58 @@ require([
         }
     });
 
-    // 2. Building Footprints (National/Open Data)
+    // Track if zoning layer loaded successfully
+    let zoningLayerLoaded = false;
+    
+    // Function to update zoning layer UI status
+    function updateZoningLayerStatus(loaded) {
+        zoningLayerLoaded = loaded;
+        const zoningToggle = document.getElementById("zoningToggle");
+        const zoningStatus = document.getElementById("zoningStatus");
+        const zoningHelpText = document.getElementById("zoningHelpText");
+        
+        if (zoningToggle && zoningStatus && zoningHelpText) {
+            if (!loaded) {
+                zoningToggle.checked = false;
+                zoningToggle.disabled = true;
+                zoningStatus.textContent = "⚠";
+                zoningStatus.title = "Unavailable due to CORS restrictions";
+                zoningHelpText.style.display = "block";
+            } else {
+                zoningToggle.disabled = false;
+                zoningStatus.textContent = "";
+                zoningHelpText.style.display = "none";
+            }
+        }
+    }
+    
+    zoningLayer.when(() => {
+        updateZoningLayerStatus(true);
+        console.log("Zoning layer loaded successfully");
+    }).catch((error) => {
+        console.warn("Zoning layer failed to load (likely CORS restriction):", error);
+        updateZoningLayerStatus(false);
+        // Hide the layer if it fails to load
+        zoningLayer.visible = false;
+    });
+
+    // 2. Building Footprints (OKC Specific)
     const buildingsLayer = new FeatureLayer({
-        url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Building_Footprints/FeatureServer/0",
-        title: "Building Footprints",
+        url: "https://services1.arcgis.com/cTNi34MxOdcfum3A/ArcGIS/rest/services/OKC_BuildingFootprints2020/FeatureServer/1",
+        title: "OKC Building Footprints",
         outFields: ["*"],
-        minScale: 50000,
+        minScale: 10000, // Only show when zoomed in (scale 1:10,000 or larger)
+        visible: true,
         renderer: {
             type: "simple",
             symbol: {
                 type: "simple-fill",
                 color: [100, 100, 100, 0.8],
-                outline: { width: 0 }
+                outline: { width: 0.5, color: [80, 80, 80, 0.6] }
             }
         }
     });
+
 
     // --- Map & View ---
     const map = new Map({
@@ -95,6 +136,26 @@ require([
         index: 0
     });
 
+    // Basemap Gallery - Collapsible
+    const basemapGallery = new BasemapGallery({
+        view: view
+        // Uses default basemaps from ArcGIS Online
+    });
+
+    // Wrap BasemapGallery in Expand widget to make it collapsible
+    const basemapGalleryExpand = new Expand({
+        view: view,
+        content: basemapGallery,
+        expandIconClass: "esri-icon-basemap",
+        expandTooltip: "Basemaps",
+        expanded: false // Collapsed by default
+    });
+
+    view.ui.add(basemapGalleryExpand, {
+        position: "top-right",
+        index: 1
+    });
+
     // --- UI Logic ---
     const treeSelect = document.getElementById("treeSelect");
 
@@ -105,6 +166,9 @@ require([
         option.textContent = `${tree.name} (${tree.diameter}ft)`;
         treeSelect.appendChild(option);
     });
+
+    // Layer Toggle Controls
+    setupLayerControls();
 
     // --- Interaction Logic ---
     view.on("click", async (event) => {
@@ -152,36 +216,114 @@ require([
     async function checkSuitability(point, buffer, graphic) {
         const issues = [];
 
-        // Check 1: Zoning
-        try {
-            const zoningQuery = zoningLayer.createQuery();
-            zoningQuery.geometry = point;
-            zoningQuery.spatialRelationship = "intersects";
-            const zoningResults = await zoningLayer.queryFeatures(zoningQuery);
+        // Check 1: Zoning (only if layer loaded successfully)
+        if (zoningLayerLoaded) {
+            try {
+                const zoningQuery = zoningLayer.createQuery();
+                zoningQuery.geometry = point;
+                zoningQuery.spatialRelationship = "intersects";
+                const zoningResults = await zoningLayer.queryFeatures(zoningQuery);
 
-            if (zoningResults.features.length === 0) {
-                issues.push("Location is outside known zoning areas.");
+                if (zoningResults.features.length === 0) {
+                    issues.push("Location is outside known zoning areas.");
+                }
+            } catch (e) {
+                console.warn("Zoning query failed:", e);
+                // Don't add this as an issue if the layer isn't available
             }
-        } catch (e) {
-            console.warn("Zoning query skipped:", e);
+        } else {
+            // Zoning layer not available (CORS restriction)
+            console.info("Zoning check skipped - layer not available (CORS restriction)");
         }
 
-        // Check 2: Buildings
+        // Check 2: Buildings - Using server-side intersection query (ArcGIS Feature Service)
+        // The FeatureLayer.queryFeatures with spatialRelationship uses server-side geoprocessing
+        // FeatureLayer automatically handles spatial reference conversion
         try {
+            // Query buildings using server-side intersection (geoprocessing on ArcGIS server)
             const buildingQuery = buildingsLayer.createQuery();
             buildingQuery.geometry = buffer;
-            buildingQuery.spatialRelationship = "intersects";
+            buildingQuery.spatialRelationship = "intersects"; // Server-side spatial operation
+            buildingQuery.returnGeometry = false; // We only need to know if there are intersections, not the geometries
+            
             const buildingResults = await buildingsLayer.queryFeatures(buildingQuery);
 
             if (buildingResults.features.length > 0) {
-                issues.push(`Conflict with existing building footprint.`);
+                issues.push(`Conflict with existing building footprint (${buildingResults.features.length} building(s) intersect).`);
             }
         } catch (e) {
-            console.warn("Building query skipped:", e);
+            console.error("Building intersection check failed:", e);
+            // If the layer is not visible or not loaded, skip the check
+            if (!buildingsLayer.visible) {
+                console.warn("Building layer is not visible, skipping intersection check");
+            }
         }
 
         // Display Results
         displayResults(issues, graphic);
+    }
+
+    // Setup Layer Toggle Controls
+    function setupLayerControls() {
+        const layerControlsContainer = document.createElement("div");
+        layerControlsContainer.className = "control-group";
+        layerControlsContainer.innerHTML = `
+            <label>Map Layers</label>
+            <div class="layer-controls">
+                <label class="layer-toggle" id="zoningToggleLabel">
+                    <input type="checkbox" id="zoningToggle" checked>
+                    <span>OKC Zoning</span>
+                    <span class="layer-status" id="zoningStatus"></span>
+                </label>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="buildingsToggle" checked>
+                    <span>Building Footprints</span>
+                </label>
+            </div>
+            <p class="help-text" id="zoningHelpText" style="display: none; color: #e65100; font-size: 0.75rem; margin-top: 5px;">
+                Zoning layer unavailable from localhost due to CORS restrictions. Deploy to app.okc.gov domain to access.
+            </p>
+        `;
+
+        // Insert after tree select control
+        const sidebarContent = document.querySelector(".sidebar-content");
+        const treeControlGroup = document.querySelector(".control-group");
+        sidebarContent.insertBefore(layerControlsContainer, treeControlGroup.nextSibling);
+
+        // Wire up toggle events
+        const zoningToggle = document.getElementById("zoningToggle");
+        zoningToggle.addEventListener("change", (e) => {
+            if (zoningLayerLoaded) {
+                zoningLayer.visible = e.target.checked;
+            } else {
+                // If layer failed to load, prevent toggling and show message
+                e.target.checked = false;
+                showNotification("Zoning layer unavailable due to CORS restrictions. Deploy to app.okc.gov domain to access.", "warning");
+            }
+        });
+
+        document.getElementById("buildingsToggle").addEventListener("change", (e) => {
+            buildingsLayer.visible = e.target.checked;
+        });
+
+        // Update checkbox based on layer visibility changes (e.g., from zoom level)
+        buildingsLayer.watch("visible", (visible) => {
+            const checkbox = document.getElementById("buildingsToggle");
+            if (checkbox) {
+                checkbox.checked = visible;
+            }
+        });
+
+        // Monitor zoom level to show/hide buildings layer
+        view.watch("scale", (scale) => {
+            // Buildings layer has minScale of 10000, so it auto-hides when zoomed out
+            // But we want to keep the checkbox state in sync
+            const checkbox = document.getElementById("buildingsToggle");
+            if (checkbox && scale > buildingsLayer.minScale) {
+                // Layer is hidden due to scale, but checkbox might still be checked
+                // This is fine - the layer will show when zoomed in if checkbox is checked
+            }
+        });
     }
 
     function displayResults(issues, graphic) {
