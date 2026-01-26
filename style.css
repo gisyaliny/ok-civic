@@ -30,6 +30,10 @@ body {
   color: var(--text-color);
 }
 
+.esri-attribution__sources, .esri-attribution__powered-by{
+  display: none;
+}
+
 /* Header Styles */
 .app-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, #6B1213 100%);
@@ -229,6 +233,70 @@ select:focus {
   color: #666;
   margin-top: 8px;
   line-height: 1.4;
+}
+
+/* Identify Button */
+.identify-button {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.identify-button:hover {
+  background-color: #6B1213;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.identify-button.active {
+  background-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.3);
+}
+
+.identify-button.active:hover {
+  background-color: #1b5e20;
+}
+
+.button-icon {
+  font-size: 1.1rem;
+}
+
+.button-text {
+  font-size: 0.9rem;
+}
+
+/* Popup Styles */
+.popup-layer-title {
+  font-size: 1rem;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+}
+
+.popup-attribute {
+  margin: 6px 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.popup-attribute strong {
+  color: var(--text-color);
+  margin-right: 6px;
 }
 
 /* Layer Controls */

@@ -3,6 +3,7 @@ require([
     "esri/views/MapView",
     "esri/layers/FeatureLayer",
     "esri/layers/GraphicsLayer",
+    "esri/layers/TileLayer",
     "esri/geometry/geometryEngine",
     "esri/Graphic",
     "esri/widgets/Search",
@@ -10,9 +11,10 @@ require([
     "esri/widgets/ScaleBar",
     "esri/widgets/BasemapGallery",
     "esri/widgets/Expand",
+    "esri/widgets/Popup",
     "esri/symbols/SimpleFillSymbol",
     "esri/symbols/SimpleLineSymbol"
-], (Map, MapView, FeatureLayer, GraphicsLayer, geometryEngine, Graphic, Search, Home, ScaleBar, BasemapGallery, Expand, SimpleFillSymbol, SimpleLineSymbol) => {
+], (Map, MapView, FeatureLayer, GraphicsLayer, TileLayer, geometryEngine, Graphic, Search, Home, ScaleBar, BasemapGallery, Expand, Popup, SimpleFillSymbol, SimpleLineSymbol) => {
 
     // --- Configuration ---
     const treeTypes = [
@@ -27,11 +29,9 @@ require([
         title: "Suitability Results"
     });
 
-    // 1. Zoning Layer (OKC Public Data)
-    // Note: This service has CORS restrictions and may not work from localhost
-    // The layer will gracefully fail if CORS blocks access
+    // 1. Zoning Layer (OKC Zoning Feature Service)
     const zoningLayer = new FeatureLayer({
-        url: "https://data.okc.gov/arcgis/rest/services/Public/Data_OKC_Gov_Application_Service/MapServer/6",
+        url: "https://services1.arcgis.com/cTNi34MxOdcfum3A/ArcGIS/rest/services/OKC_Zoning/FeatureServer/2",
         title: "OKC Zoning",
         outFields: ["*"],
         visible: true,
@@ -98,11 +98,19 @@ require([
         }
     });
 
+    // 3. Tree Canopy Tile Layer
+    const treeCanopyLayer = new TileLayer({
+        url: "https://tiles.arcgis.com/tiles/cTNi34MxOdcfum3A/arcgis/rest/services/OKC_Tree_Canopy/MapServer",
+        title: "OKC Tree Canopy",
+        visible: false, // Default off
+        opacity: 0.7
+    });
+
 
     // --- Map & View ---
     const map = new Map({
         basemap: "gray-vector",
-        layers: [zoningLayer, buildingsLayer, resultsLayer]
+        layers: [zoningLayer, buildingsLayer, treeCanopyLayer, resultsLayer]
     });
 
     const view = new MapView({
@@ -170,8 +178,38 @@ require([
     // Layer Toggle Controls
     setupLayerControls();
 
+    // --- Identify Mode ---
+    let identifyModeActive = false;
+    const identifyBtn = document.getElementById("identifyBtn");
+    const identifyHelpText = document.getElementById("identifyHelpText");
+
+    identifyBtn.addEventListener("click", () => {
+        identifyModeActive = !identifyModeActive;
+        
+        if (identifyModeActive) {
+            identifyBtn.classList.add("active");
+            identifyBtn.querySelector(".button-text").textContent = "Exit Identify";
+            identifyHelpText.style.display = "block";
+            view.cursor = "crosshair";
+            showNotification("Identify mode active. Click on the map to identify features.", "info");
+        } else {
+            identifyBtn.classList.remove("active");
+            identifyBtn.querySelector(".button-text").textContent = "Identify Features";
+            identifyHelpText.style.display = "none";
+            view.cursor = "default";
+            view.popup.close();
+        }
+    });
+
     // --- Interaction Logic ---
     view.on("click", async (event) => {
+        // Check if identify mode is active
+        if (identifyModeActive) {
+            await identifyFeatures(event);
+            return;
+        }
+
+        // Original tree suitability logic
         // 1. Check if a tree is selected
         const selectedDiameter = parseFloat(treeSelect.value);
         if (!selectedDiameter) {
@@ -263,6 +301,106 @@ require([
         displayResults(issues, graphic);
     }
 
+    // Identify Features Function
+    async function identifyFeatures(event) {
+        const point = event.mapPoint;
+        const features = [];
+        const promises = [];
+
+        // Query Zoning Layer
+        if (zoningLayer.visible && zoningLayerLoaded) {
+            promises.push(
+                zoningLayer.queryFeatures({
+                    geometry: point,
+                    spatialRelationship: "intersects",
+                    returnGeometry: true,
+                    outFields: ["*"]
+                }).then(result => {
+                    if (result.features.length > 0) {
+                        result.features.forEach(feature => {
+                            features.push({
+                                layer: zoningLayer,
+                                feature: feature
+                            });
+                        });
+                    }
+                }).catch(err => {
+                    console.warn("Zoning identify query failed:", err);
+                })
+            );
+        }
+
+        // Query Building Footprints Layer
+        if (buildingsLayer.visible) {
+            promises.push(
+                buildingsLayer.queryFeatures({
+                    geometry: point,
+                    spatialRelationship: "intersects",
+                    returnGeometry: true,
+                    outFields: ["*"]
+                }).then(result => {
+                    if (result.features.length > 0) {
+                        result.features.forEach(feature => {
+                            features.push({
+                                layer: buildingsLayer,
+                                feature: feature
+                            });
+                        });
+                    }
+                }).catch(err => {
+                    console.warn("Building identify query failed:", err);
+                })
+            );
+        }
+
+        // Wait for all queries to complete
+        await Promise.all(promises);
+
+        // Show popup with results
+        if (features.length > 0) {
+            // Create popup content
+            const popupContent = features.map(({ layer, feature }) => {
+                const attributes = feature.attributes;
+                let content = `<div class="popup-layer-title"><strong>${layer.title}</strong></div>`;
+                
+                // Format attributes based on layer type
+                if (layer === zoningLayer) {
+                    content += `<div class="popup-attribute"><strong>Zoning Class:</strong> ${attributes.P_ZONE || 'N/A'}</div>`;
+                    if (attributes.P_CASE) {
+                        content += `<div class="popup-attribute"><strong>Case Number:</strong> ${attributes.P_CASE}</div>`;
+                    }
+                    if (attributes.LEGEND) {
+                        content += `<div class="popup-attribute"><strong>Legend:</strong> ${attributes.LEGEND}</div>`;
+                    }
+                } else if (layer === buildingsLayer) {
+                    // Building footprints might have different fields
+                    const fieldNames = Object.keys(attributes).filter(key => 
+                        !key.startsWith('Shape_') && 
+                        key !== 'OBJECTID' && 
+                        key !== 'GlobalID'
+                    );
+                    fieldNames.forEach(field => {
+                        if (attributes[field] !== null && attributes[field] !== undefined) {
+                            content += `<div class="popup-attribute"><strong>${field}:</strong> ${attributes[field]}</div>`;
+                        }
+                    });
+                }
+                
+                return content;
+            }).join('<hr>');
+
+            // Show popup at clicked location
+            view.popup.open({
+                location: point,
+                title: `Identified Features (${features.length})`,
+                content: popupContent
+            });
+        } else {
+            showNotification("No features found at this location.", "info");
+            view.popup.close();
+        }
+    }
+
     // Setup Layer Toggle Controls
     function setupLayerControls() {
         const layerControlsContainer = document.createElement("div");
@@ -278,6 +416,10 @@ require([
                 <label class="layer-toggle">
                     <input type="checkbox" id="buildingsToggle" checked>
                     <span>Building Footprints</span>
+                </label>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="canopyToggle">
+                    <span>Tree Canopy</span>
                 </label>
             </div>
             <p class="help-text" id="zoningHelpText" style="display: none; color: #e65100; font-size: 0.75rem; margin-top: 5px;">
@@ -304,6 +446,10 @@ require([
 
         document.getElementById("buildingsToggle").addEventListener("change", (e) => {
             buildingsLayer.visible = e.target.checked;
+        });
+
+        document.getElementById("canopyToggle").addEventListener("change", (e) => {
+            treeCanopyLayer.visible = e.target.checked;
         });
 
         // Update checkbox based on layer visibility changes (e.g., from zoom level)
