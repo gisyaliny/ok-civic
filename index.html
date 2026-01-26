@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OKC Tree Suitability</title>
+
+  <!-- Calcite Design System (Optional, using CSS mainly) -->
+  <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <h1>OKC Tree Planter</h1>
+      <p>Site Assessment Tool</p>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="control-group">
+        <label for="treeSelect">Select Tree Type</label>
+        <div class="select-wrapper">
+          <select id="treeSelect">
+            <option value="" disabled selected>Choose a species...</option>
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <p class="help-text">Select a tree to see its required growing zone.</p>
+      </div>
+
+      <div id="instructionPanel">
+        <div class="step">
+          <span class="step-num">1</span>
+          <span>Pick a tree above.</span>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span>Click on the map to test a location.</span>
+        </div>
+      </div>
+
+      <!-- Result Card (Hidden by default) -->
+      <div id="resultCard" class="result-card hidden">
+        <div class="result-header">
+          <h2 id="resultTitle">Assessment Pending</h2>
+          <span id="resultIcon"></span>
+        </div>
+        <div class="result-body">
+          <ul id="suitabilityReasons"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <p>Data: OKC Open Data, Microsoft Buildings</p>
+    </div>
+  </div>
+
+  <!-- Map View -->
+  <div id="viewDiv"></div>
+
+  <!-- ArcGIS API -->
+  <script src="https://js.arcgis.com/4.31/"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

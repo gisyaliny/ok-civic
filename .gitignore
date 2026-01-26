@@ -1,0 +1,32 @@
+# Geospatial Data
+*.tif
+*.tiff
+*.geotiff
+*.shp
+*.shx
+*.dbf
+*.prj
+*.sbn
+*.sbx
+*.xml
+*.cpg
+*.zip
+*.tar
+*.gz
+*.7z
+
+# ESRI Specific
+*.gdb
+*.lock
+
+# Directories containing large data
+data/
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS specific
+.DS_Store
+Thumbs.db
