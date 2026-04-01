@@ -916,20 +916,26 @@ select:focus {
 }
 
 .footer-bottom {
-  padding: 20px 25px;
+  padding: 10px 20px 12px;
   text-align: center;
   background-color: #1f1f1f;
   max-width: 100%;
 }
 
 .footer-bottom p {
-  margin: 6px 0;
-  font-size: 0.8rem;
+  margin: 3px 0;
+  font-size: 0.75rem;
   color: #b0b0b0;
 }
 
+.footer-copy {
+  margin: 0 0 2px !important;
+  font-size: 0.72rem !important;
+  color: #9a9a9a !important;
+}
+
 .footer-contact {
-  margin: 8px 0 !important;
+  margin: 4px 0 !important;
 }
 
 .footer-contact a {
@@ -944,8 +950,8 @@ select:focus {
 }
 
 .footer-credit {
-  margin: 10px 0 6px !important;
-  font-size: 0.78rem;
+  margin: 2px 0 0 !important;
+  font-size: 0.72rem;
   color: #9a9a9a;
 }
 
@@ -958,12 +964,6 @@ select:focus {
 .footer-credit a:hover {
   color: var(--white);
   text-decoration: underline;
-}
-
-.footer-note {
-  font-style: italic;
-  opacity: 0.8;
-  margin-top: 8px !important;
 }
 
 /* Responsive adjustments */
