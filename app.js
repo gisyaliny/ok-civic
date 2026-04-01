@@ -209,9 +209,13 @@ require([
     const onboardingSkipEl = document.getElementById("onboardingSkip");
     const reopenOnboardingBtn = document.getElementById("reopenOnboardingBtn");
 
+    /** Declared before initOnboarding() — renderStep() reads this; `let` below Identify block caused TDZ on deploy. */
+    let identifyModeActive = false;
+
     let analysisSeq = 0;
     const analysisCache = new Map();
     let onboardingStep = 0;
+    let onboardingAutoAdvanceTimer = null;
     const ONBOARDING_KEY = "okc-tree-planter-onboarding-dismissed-v1";
     let onboardingCleanupHighlight = null;
     let lastAnalysisDetails = {
@@ -352,7 +356,6 @@ require([
     reopenOnboardingBtn?.addEventListener("click", () => openOnboarding(true));
 
     // --- Identify Mode ---
-    let identifyModeActive = false;
     const identifyBtn = document.getElementById("identifyBtn");
     const identifyHelpText = document.getElementById("identifyHelpText");
 
@@ -890,6 +893,13 @@ require([
         }
     }
 
+    function clearOnboardingAutoAdvance() {
+        if (onboardingAutoAdvanceTimer != null) {
+            clearTimeout(onboardingAutoAdvanceTimer);
+            onboardingAutoAdvanceTimer = null;
+        }
+    }
+
     function initOnboarding() {
         if (!onboardingOverlayEl) return;
         const dismissed = localStorage.getItem(ONBOARDING_KEY) === "1";
@@ -904,6 +914,7 @@ require([
             if (dismissed) return;
         }
 
+        clearOnboardingAutoAdvance();
         onboardingStep = 0;
         const steps = [
             {
@@ -955,9 +966,20 @@ require([
                     mapStatusPill.classList.add("hidden");
                 }
             }
+
+            clearOnboardingAutoAdvance();
+            if (onboardingStep < steps.length - 1) {
+                onboardingAutoAdvanceTimer = setTimeout(() => {
+                    onboardingAutoAdvanceTimer = null;
+                    if (!onboardingOverlayEl || onboardingOverlayEl.classList.contains("hidden")) return;
+                    onboardingStep += 1;
+                    renderStep();
+                }, 3000);
+            }
         }
 
         function closeOnboarding() {
+            clearOnboardingAutoAdvance();
             if (onboardingDontShowEl?.checked) {
                 localStorage.setItem(ONBOARDING_KEY, "1");
             }
@@ -973,6 +995,7 @@ require([
         renderStep();
 
         onboardingNextEl.onclick = () => {
+            clearOnboardingAutoAdvance();
             if (onboardingStep >= steps.length - 1) {
                 closeOnboarding();
                 return;
