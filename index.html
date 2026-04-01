@@ -10,7 +10,7 @@
   <!-- Calcite Design System (Optional, using CSS mainly) -->
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -68,31 +68,100 @@
       </div>
 
       <div id="instructionPanel">
-        <div class="step">
-          <span class="step-num">1</span>
-          <span>Pick a tree above.</span>
-        </div>
-        <div class="step">
-          <span class="step-num">2</span>
-          <span>Click on the map to test a location.</span>
+        <p class="quick-hint">Select a tree type above, then click the map to test a location.</p>
+      </div>
+
+      <div class="control-group">
+        <button id="reopenOnboardingBtn" class="help-tour-btn" type="button">Show Quick Tour</button>
+      </div>
+
+      <div id="dataHealthPanel" class="control-group">
+        <label>Data Health</label>
+        <div class="health-list">
+          <div class="health-item"><span>Zoning</span><span id="healthZoning">Checking…</span></div>
+          <div class="health-item"><span>Buildings</span><span id="healthBuildings">Checking…</span></div>
+          <div class="health-item"><span>Tree canopy</span><span id="healthCanopy">Loading…</span></div>
         </div>
       </div>
 
-      <!-- Result Card (Hidden by default) -->
-      <div id="resultCard" class="result-card hidden">
-        <div class="result-header">
-          <h2 id="resultTitle">Assessment Pending</h2>
-          <span id="resultIcon"></span>
-        </div>
-        <div class="result-body">
-          <ul id="suitabilityReasons"></ul>
-        </div>
-      </div>
     </div>
   </div>
 
     <!-- Map View -->
-    <div id="viewDiv"></div>
+    <div id="mapFrame">
+      <div id="viewDiv"></div>
+      <div id="mapStatusPill" class="map-status-pill hidden" aria-live="polite"></div>
+
+      <!-- Docked Modal (Hidden by default) -->
+      <div id="resultCard" class="result-card location-modal dock-bottom-right hidden" role="dialog" aria-label="Location result">
+        <div class="result-header">
+          <div class="result-title-wrap">
+            <h2 id="resultTitle">Assessment Pending</h2>
+            <div id="resultMeta" class="result-meta" aria-live="polite">
+              <span id="resultSpinner" class="result-spinner" aria-hidden="true"></span>
+              <span id="resultTimestamp" class="result-timestamp"></span>
+            </div>
+          </div>
+          <button id="closeResultModal" class="modal-close" aria-label="Close">✕</button>
+        </div>
+        <div class="result-body">
+          <div class="result-section" id="contextSection">
+            <div class="result-section-title">Context</div>
+            <div class="context-grid">
+              <div class="context-item">
+                <div class="context-label">Zoning</div>
+                <div class="context-value">
+                  <div class="context-hover" id="zoningInfo" tabindex="0" title="Hover to highlight on map">—</div>
+                  <button id="copyZoningHint" class="context-action hidden" type="button" aria-label="Copy zoning access note">
+                    Copy access note
+                  </button>
+                </div>
+              </div>
+              <div class="context-item">
+                <div class="context-label">Nearest building</div>
+                <div class="context-value context-hover" id="nearestBuildingInfo" tabindex="0" title="Hover to highlight on map">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="result-section">
+            <div class="result-section-title">Suitability</div>
+            <ul id="suitabilityReasons"></ul>
+          </div>
+          <div class="result-section">
+            <div class="result-section-title">Action Advice</div>
+            <p id="actionAdvice" class="action-advice">Pick a tree type and click a location to get guidance.</p>
+          </div>
+          <div class="result-section">
+            <button id="whyToggle" class="why-toggle" type="button" aria-expanded="false">Why this result?</button>
+            <div id="whyDetails" class="why-details hidden">
+              <ul id="whyList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="resultDockIcon" class="result-dock-icon hidden" type="button" aria-label="Restore location result" title="Show latest result">
+        🌳
+      </button>
+    </div>
+  </div>
+
+  <div id="onboardingOverlay" class="onboarding-overlay hidden" role="dialog" aria-label="App walkthrough">
+    <div class="onboarding-card">
+      <div class="onboarding-step-tag" id="onboardingStepTag">Step 1 of 3</div>
+      <h3 id="onboardingTitle">Welcome to OKC Tree Planter</h3>
+      <p id="onboardingText">Use this quick guide to run your first suitability check.</p>
+      <div class="onboarding-actions">
+        <label class="dont-show">
+          <input type="checkbox" id="onboardingDontShow">
+          <span>Don't show again</span>
+        </label>
+        <div class="onboarding-buttons">
+          <button id="onboardingSkip" type="button">Skip</button>
+          <button id="onboardingNext" type="button">Next</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Footer -->
