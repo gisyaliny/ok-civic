@@ -943,6 +943,23 @@ select:focus {
   text-decoration: underline;
 }
 
+.footer-credit {
+  margin: 10px 0 6px !important;
+  font-size: 0.78rem;
+  color: #9a9a9a;
+}
+
+.footer-credit a {
+  color: #c8c8c8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-credit a:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
 .footer-note {
   font-style: italic;
   opacity: 0.8;
