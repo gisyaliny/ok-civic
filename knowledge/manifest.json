@@ -1,0 +1,37 @@
+[
+  {
+    "id": "tree_resources_main",
+    "chars": 0,
+    "status": "error: 403 Client Error: Forbidden for url: https://www.okcbeautiful.com/tree-resources"
+  },
+  {
+    "id": "tree_okc_program",
+    "chars": 0,
+    "status": "error: 403 Client Error: Forbidden for url: https://www.okcbeautiful.com/tree-okc"
+  },
+  {
+    "id": "programs_overview",
+    "chars": 0,
+    "status": "error: 403 Client Error: Forbidden for url: https://www.okcbeautiful.com/programs"
+  },
+  {
+    "id": "community_foresters",
+    "chars": 0,
+    "status": "error: 403 Client Error: Forbidden for url: https://www.okcbeautiful.com/community-foresters"
+  },
+  {
+    "id": "planting_guide_en",
+    "chars": 0,
+    "status": "empty"
+  },
+  {
+    "id": "tree_care_guide_en",
+    "chars": 0,
+    "status": "empty"
+  },
+  {
+    "id": "native_alternatives",
+    "chars": 0,
+    "status": "empty"
+  }
+]

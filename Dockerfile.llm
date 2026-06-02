@@ -1,0 +1,22 @@
+# llama.cpp server with Qwen GGUF model
+# The model file is mounted from ./models/ at runtime — not baked into the image.
+# Build: docker build -f Dockerfile.llm -t okc-llm .
+# Run:   see docker-compose.yml
+
+FROM ghcr.io/ggerganov/llama.cpp:server
+
+# The server binary is at /llama-server (llama.cpp server image entrypoint).
+# Model is mounted as a volume; no COPY needed.
+EXPOSE 8080
+
+# Default command — overridden in docker-compose.yml for production settings.
+# -m  : model path (must match volume mount)
+# -c  : context window (tokens)
+# --host : listen on all interfaces so Docker port mapping works
+# -np : number of parallel slots (set to 1 for single GPU / CPU inference)
+CMD ["-m", "/models/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf", \
+     "--host", "0.0.0.0", \
+     "--port", "8080", \
+     "-c", "4096", \
+     "-np", "1", \
+     "--log-disable"]

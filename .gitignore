@@ -26,6 +26,16 @@ output/
 # Python
 __pycache__/
 *.py[cod]
+.venv/
+*.egg-info/
+
+# Local model files (large GGUF)
+models/*.gguf
+models/*.bin
+
+# Knowledge base (rebuilt by scripts)
+knowledge/raw/
+knowledge/knowledge_base.json
 
 # OS specific
 .DS_Store
