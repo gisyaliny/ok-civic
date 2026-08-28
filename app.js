@@ -17,6 +17,8 @@ require([
     // --- Configuration ---
     /** Tree canopy raster: pixel value >= this counts as existing canopy (tune to your ImageServer classification). */
     const TREE_CANOPY_PIXEL_MIN = 1;
+    const TREE_CANOPY_RENDER_MIN = 1;
+    const TREE_CANOPY_RENDER_MAX = 43;
     const TREE_CANOPY_IMAGE_URL = "https://csagis.csa.ou.edu/server/rest/services/OKC10km/ImageServer";
 
     const treeTypes = [
@@ -105,12 +107,33 @@ require([
         }
     });
 
-    // Tree canopy (CSA ImageServer) — symbology from Enterprise; overlap check via /identify sampling
+    // Tree canopy (CSA ImageServer) — client-side green ramp; overlap check via /identify sampling
     const treeCanopyImageryLayer = new ImageryLayer({
         url: TREE_CANOPY_IMAGE_URL,
         title: "Tree canopy (OKC 10 km)",
         visible: false,
-        opacity: 0.72
+        opacity: 0.72,
+        renderer: {
+            type: "raster-stretch",
+            stretchType: "min-max",
+            statistics: [{
+                min: TREE_CANOPY_RENDER_MIN,
+                max: TREE_CANOPY_RENDER_MAX
+            }],
+            colorRamp: {
+                type: "multipart",
+                colorStops: [
+                    { value: 0, color: [228, 250, 234, 255] },
+                    { value: 0.14, color: [169, 248, 187, 255] },
+                    { value: 0.29, color: [98, 245, 138, 255] },
+                    { value: 0.43, color: [0, 237, 59, 255] },
+                    { value: 0.57, color: [0, 217, 51, 255] },
+                    { value: 0.71, color: [0, 143, 32, 255] },
+                    { value: 0.86, color: [0, 91, 24, 255] },
+                    { value: 1, color: [0, 75, 24, 255] }
+                ]
+            }
+        }
     });
     let treeCanopyImageryLoaded = false;
     let treeCanopyImageryStatus = "pending"; // pending | ok | fail
