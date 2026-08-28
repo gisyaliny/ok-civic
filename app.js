@@ -20,6 +20,52 @@ require([
     const TREE_CANOPY_RENDER_MIN = 1;
     const TREE_CANOPY_RENDER_MAX = 43;
     const TREE_CANOPY_IMAGE_URL = "https://csagis.csa.ou.edu/server/rest/services/OKC10km/ImageServer";
+    const DEFAULT_TREE_CANOPY_COLORS = {
+        start: "#b9e98b",
+        mid: "#59a84c",
+        end: "#174f2d"
+    };
+
+    function hexToRgbArray(hex) {
+        const normalized = hex.replace('#', '').trim();
+        if (!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(normalized)) {
+            return [234, 248, 229, 255];
+        }
+        const full = normalized.length === 3
+            ? normalized.split('').map((char) => char + char).join('')
+            : normalized;
+        const numeric = Number.parseInt(full, 16);
+        return [
+            (numeric >> 16) & 255,
+            (numeric >> 8) & 255,
+            numeric & 255,
+            255
+        ];
+    }
+
+    function buildTreeCanopyColorRamp(startHex = DEFAULT_TREE_CANOPY_COLORS.start, midHex = DEFAULT_TREE_CANOPY_COLORS.mid, endHex = DEFAULT_TREE_CANOPY_COLORS.end) {
+        const start = hexToRgbArray(startHex);
+        const mid = hexToRgbArray(midHex);
+        const end = hexToRgbArray(endHex);
+
+        return {
+            type: "multipart",
+            colorRamps: [
+                {
+                    type: "algorithmic",
+                    algorithm: "cie-lab",
+                    fromColor: start,
+                    toColor: mid
+                },
+                {
+                    type: "algorithmic",
+                    algorithm: "cie-lab",
+                    fromColor: mid,
+                    toColor: end
+                }
+            ]
+        };
+    }
 
     const treeTypes = [
         { name: "Redbud", diameter: 20, description: "Small ornamental tree" }, // Diameter in feet
@@ -120,55 +166,31 @@ require([
                 min: TREE_CANOPY_RENDER_MIN,
                 max: TREE_CANOPY_RENDER_MAX
             }],
-            colorRamp: {
-                type: "multipart",
-                colorRamps: [
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [228, 250, 234, 255],
-                        toColor: [135, 240, 160, 255]
-                    },
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [135, 240, 160, 255],
-                        toColor: [50, 220, 100, 255]
-                    },
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [50, 220, 100, 255],
-                        toColor: [0, 190, 55, 255]
-                    },
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [0, 190, 55, 255],
-                        toColor: [0, 155, 42, 255]
-                    },
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [0, 155, 42, 255],
-                        toColor: [0, 115, 30, 255]
-                    },
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [0, 115, 30, 255],
-                        toColor: [0, 75, 20, 255]
-                    },
-                    {
-                        type: "algorithmic",
-                        algorithm: "cie-lab",
-                        fromColor: [0, 75, 20, 255],
-                        toColor: [0, 45, 12, 255]
-                    }
-                ]
-            }
+            colorRamp: buildTreeCanopyColorRamp(
+                DEFAULT_TREE_CANOPY_COLORS.start,
+                DEFAULT_TREE_CANOPY_COLORS.mid,
+                DEFAULT_TREE_CANOPY_COLORS.end
+            )
         }
     });
+
+    function applyTreeCanopyColorRamp(startHex, midHex, endHex) {
+        const renderer = treeCanopyImageryLayer.renderer || {};
+        treeCanopyImageryLayer.renderer = {
+            ...renderer,
+            type: "raster-stretch",
+            stretchType: "min-max",
+            customStatistics: [{
+                min: TREE_CANOPY_RENDER_MIN,
+                max: TREE_CANOPY_RENDER_MAX
+            }],
+            colorRamp: buildTreeCanopyColorRamp(startHex, midHex, endHex)
+        };
+
+        if (treeCanopyImageryLayer.visible) {
+            treeCanopyImageryLayer.refresh();
+        }
+    }
     let treeCanopyImageryLoaded = false;
     let treeCanopyImageryStatus = "pending"; // pending | ok | fail
     treeCanopyImageryLayer.when(() => {
@@ -403,6 +425,25 @@ require([
         option.value = tree.diameter;
         option.textContent = `${tree.name} (${tree.diameter}ft)`;
         treeSelect.appendChild(option);
+    });
+
+    const canopyStartColorInput = document.getElementById("canopyStartColor");
+    const canopyMidColorInput = document.getElementById("canopyMidColor");
+    const canopyEndColorInput = document.getElementById("canopyEndColor");
+
+    function syncCanopyColorsFromInputs() {
+        if (!canopyStartColorInput || !canopyMidColorInput || !canopyEndColorInput) return;
+
+        applyTreeCanopyColorRamp(
+            canopyStartColorInput.value,
+            canopyMidColorInput.value,
+            canopyEndColorInput.value
+        );
+    }
+
+    [canopyStartColorInput, canopyMidColorInput, canopyEndColorInput].forEach((input) => {
+        if (!input) return;
+        input.addEventListener("input", syncCanopyColorsFromInputs);
     });
 
     // Layer Toggle Controls
