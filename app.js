@@ -116,21 +116,55 @@ require([
         renderer: {
             type: "raster-stretch",
             stretchType: "min-max",
-            statistics: [{
+            customStatistics: [{
                 min: TREE_CANOPY_RENDER_MIN,
                 max: TREE_CANOPY_RENDER_MAX
             }],
             colorRamp: {
                 type: "multipart",
-                colorStops: [
-                    { value: 0, color: [228, 250, 234, 255] },
-                    { value: 0.14, color: [169, 248, 187, 255] },
-                    { value: 0.29, color: [98, 245, 138, 255] },
-                    { value: 0.43, color: [0, 237, 59, 255] },
-                    { value: 0.57, color: [0, 217, 51, 255] },
-                    { value: 0.71, color: [0, 143, 32, 255] },
-                    { value: 0.86, color: [0, 91, 24, 255] },
-                    { value: 1, color: [0, 75, 24, 255] }
+                colorRamps: [
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [228, 250, 234, 255],
+                        toColor: [135, 240, 160, 255]
+                    },
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [135, 240, 160, 255],
+                        toColor: [50, 220, 100, 255]
+                    },
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [50, 220, 100, 255],
+                        toColor: [0, 190, 55, 255]
+                    },
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [0, 190, 55, 255],
+                        toColor: [0, 155, 42, 255]
+                    },
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [0, 155, 42, 255],
+                        toColor: [0, 115, 30, 255]
+                    },
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [0, 115, 30, 255],
+                        toColor: [0, 75, 20, 255]
+                    },
+                    {
+                        type: "algorithmic",
+                        algorithm: "cie-lab",
+                        fromColor: [0, 75, 20, 255],
+                        toColor: [0, 45, 12, 255]
+                    }
                 ]
             }
         }
