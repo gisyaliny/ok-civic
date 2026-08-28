@@ -1,9 +1,0 @@
-# Requirements for the scraper and knowledge-base builder scripts only.
-# Compatible with Python 3.6 (the host venv).
-# FastAPI backend runs in Docker and uses requirements.txt instead.
-requests
-beautifulsoup4
-lxml
-pdfminer.six
-scikit-learn
-numpy

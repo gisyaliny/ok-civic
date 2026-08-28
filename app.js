@@ -512,24 +512,6 @@ require([
             zoningAvailable: zoningLayerLoaded && zoningLayer.visible
         };
 
-        // Expose current analysis state for the chat agent
-        const selectedTreeObj = treeTypes.find(t => t.diameter === parseFloat(treeSelect.value));
-        const clickPt = context.__clickPoint;
-        window.treeAgentContext = {
-            selectedTree: selectedTreeObj
-                ? { name: selectedTreeObj.name, diameter: selectedTreeObj.diameter }
-                : null,
-            lastResult: {
-                suitable: (suitability.issues || []).length === 0,
-                issues: suitability.issues || [],
-                zoning: context.zoningText || null,
-                nearestBuilding: context.nearestBuildingText || null,
-                clickLocation: clickPt
-                    ? { lat: clickPt.latitude ?? clickPt.y, lon: clickPt.longitude ?? clickPt.x }
-                    : null
-            }
-        };
-
         displayResults(suitability.issues, graphic);
         const anyConflict =
             lastContext.buildingHasConflict ||
